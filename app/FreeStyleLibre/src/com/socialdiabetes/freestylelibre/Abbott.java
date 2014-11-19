@@ -15,6 +15,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.IntentFilter.MalformedMimeTypeException;
+import android.graphics.Typeface;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.NfcV;
@@ -33,30 +34,32 @@ public class Abbott extends Activity {
  
     public static final String MIME_TEXT_PLAIN = "text/plain";
  
-    private NfcAdapter mNfcAdapter;
+    private NfcAdapter NFCAdapter;
     
     private String lectura;
     
-    private TextView result;
+    private TextView tvResult;
  
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_abbott);
   
-		result = (TextView)findViewById(R.id.result);
+		tvResult = (TextView)findViewById(R.id.result);
 
-        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+        NFCAdapter = NfcAdapter.getDefaultAdapter(this);
+        
+        Typeface tf = Typeface.createFromAsset(getAssets(), "fonts/Courier.ttf");
+        tvResult.setTypeface(tf);
  
-        if (mNfcAdapter == null) {
-            // Stop here, we definitely need NFC
+        if (NFCAdapter == null) {
             Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
             finish();
             return;
  
         }
      
-        if (!mNfcAdapter.isEnabled()) {
+        if (!NFCAdapter.isEnabled()) {
         	Toast.makeText(this, "NFC is disabled.", Toast.LENGTH_LONG).show();
         }
          
@@ -71,7 +74,7 @@ public class Abbott extends Activity {
          * It's important, that the activity is in the foreground (resumed). Otherwise
          * an IllegalStateException is thrown. 
          */
-        setupForegroundDispatch(this, mNfcAdapter);
+        setupForegroundDispatch(this, NFCAdapter);
     }
      
     @Override
@@ -79,7 +82,7 @@ public class Abbott extends Activity {
         /**
          * Call this before onPause, otherwise an IllegalArgumentException is thrown as well.
          */
-        stopForegroundDispatch(this, mNfcAdapter);
+        stopForegroundDispatch(this, NFCAdapter);
          
         super.onPause();
     }
@@ -101,10 +104,7 @@ public class Abbott extends Activity {
     	    if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
     	         
     	    	Log.d("socialdiabetes", "NfcAdapter.ACTION_TECH_DISCOVERED");
-    	        // In case we would still use the Tech Discovered Intent
     	        Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-    	        // String[] techList = tag.getTechList();
-    	        // String searchedTech = Ndef.class.getName();
                 new NfcVReaderTask().execute(tag);
     	         
     	    }
@@ -123,10 +123,10 @@ public class Abbott extends Activity {
         IntentFilter[] filters = new IntentFilter[1];
         String[][] techList = new String[][]{};
  
-        // Notice that this is the same filter as in our manifest.
         filters[0] = new IntentFilter();
         filters[0].addAction(NfcAdapter.ACTION_NDEF_DISCOVERED);
         filters[0].addCategory(Intent.CATEGORY_DEFAULT);
+        
         try {
             filters[0].addDataType(MIME_TEXT_PLAIN);
         } catch (MalformedMimeTypeException e) {
@@ -153,6 +153,9 @@ public class Abbott extends Activity {
      
     	@Override
         protected void onPostExecute(String result) {
+    		if (result != null) {
+                Toast.makeText(getApplicationContext(), "Saved as /sdcard/"+result, Toast.LENGTH_LONG).show();
+    		}
     	    Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
             vibrator.vibrate(1000);
         }
@@ -162,17 +165,13 @@ public class Abbott extends Activity {
             Tag tag = params[0];
             
             NfcV nfcvTag = NfcV.get(tag);
-            Log.d("socialdiabetes", "Entra en NdefReaderTask: " + nfcvTag.toString());
-            
-            Log.d("socialdiabetes", "Tag ID: "+tag.getId());
-            
             
             try {                   
                 nfcvTag.connect();
             } catch (IOException e) {
             	Abbott.this.runOnUiThread(new Runnable() {
             		public void run() {
-                        Toast.makeText(getApplicationContext(), "No se pudo abrir una conexión NFC!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Error opening NFC connection", Toast.LENGTH_SHORT).show();
             		}
             	});
 
@@ -194,7 +193,6 @@ public class Abbott extends Activity {
                 };
                 byte[] systeminfo = nfcvTag.transceive(cmd);
 
-                //Log.d("socialdiabetes", "systeminfo: "+systeminfo.toString()+" - "+systeminfo.length);
                 //Log.d("socialdiabetes", "systeminfo HEX: "+bytesToHex(systeminfo));
                 
                 systeminfo = Arrays.copyOfRange(systeminfo, 2, systeminfo.length - 1);
@@ -235,7 +233,7 @@ public class Abbott extends Activity {
             } catch (IOException e) {
             	Abbott.this.runOnUiThread(new Runnable() {
             		public void run() {
-            			Toast.makeText(getApplicationContext(), "Se ha producido un error al leer!", Toast.LENGTH_SHORT).show();
+            			Toast.makeText(getApplicationContext(), "Error reading NFC!", Toast.LENGTH_SHORT).show();
             		}
             	});
                 
@@ -247,7 +245,7 @@ public class Abbott extends Activity {
             } catch (IOException e) {
             	Abbott.this.runOnUiThread(new Runnable() {
             		public void run() {
-                        Toast.makeText(getApplicationContext(), "Error al cerrar la conexión NFC!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Error closing NFC connection!", Toast.LENGTH_SHORT).show();
             		}
             	});
 
@@ -257,8 +255,8 @@ public class Abbott extends Activity {
             
             Date date = new Date() ;
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss") ;
+            File myFile = new File("/sdcard/fsl_"+dateFormat.format(date) + ".log");
             try {
-                File myFile = new File("/sdcard/fsl_"+dateFormat.format(date) + ".log");
                 myFile.createNewFile();
                 FileOutputStream fOut = new FileOutputStream(myFile);
                 OutputStreamWriter myOutWriter =new OutputStreamWriter(fOut);
@@ -270,7 +268,7 @@ public class Abbott extends Activity {
             {
             }
             
-            return null;
+            return myFile.getName();
         }
          
        
@@ -279,7 +277,7 @@ public class Abbott extends Activity {
     {
     	Abbott.this.runOnUiThread(new Runnable() {
     		public void run() {
-                result.setText(s);
+    			tvResult.setText(s);
     		}
     	});
 
