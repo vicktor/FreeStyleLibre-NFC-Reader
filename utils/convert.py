@@ -40,11 +40,47 @@ GetTime(int(iniciado, 16))
 
 f = open('output.txt','wb')
 
-# a partir de la posicion 0x1C empieza la lista de los valores 56 = 0x1C * 2
-for i in xrange(56,48*6*2+56,12):
-    print allcontent[i:i+12]
-    f.write(allcontent[i:i+12]+'\n')
-    #print int(allcontent[i+8:i+10],16)
-    #print int(allcontent[i+6:i+8],16)
-f.close() 
+nextWriteBlock1 = int(allcontent[26*2:26*2+2],16)
+nextWriteBlock2 = int(allcontent[27*2:27*2+2],16)
 
+# a partir de la posicion 0x1C empieza la lista de los valores 56 = 0x1C * 2
+# write block 1
+lineNumber = 0
+for i in xrange(56,16*6*2+56,12):
+    record = allcontent[i:i+12]
+    bytes = [record[i:i+2] for i in range(0, len(record), 2)]
+    line = " ".join(bytes)
+
+    if (nextWriteBlock1 - lineNumber != 0):
+        line = line + "    | " + str(nextWriteBlock1 - lineNumber) + " min"
+
+    if (lineNumber == nextWriteBlock1):
+        line = line + "    | Now"
+        nextWriteBlock1 += 16
+
+    print line
+    f.write(line+'\n')
+    lineNumber += 1
+
+f.write("------------------\n")
+print "------------------"
+
+# write block 2
+lineNumber = 0
+for i in xrange(16*6*2+56,48*6*2+56,12):
+    record = allcontent[i:i+12]
+    bytes = [record[i:i+2] for i in range(0, len(record), 2)]
+    line = " ".join(bytes)
+
+    if (nextWriteBlock2 - lineNumber != 0):
+        line = line + "    | " + str((nextWriteBlock2 - lineNumber)*15) + " min"
+
+    if (lineNumber == nextWriteBlock2):
+        line = line + "    | Last"
+        nextWriteBlock2 += 32
+
+    print line
+    f.write(line+'\n')
+    lineNumber += 1
+
+f.close()
