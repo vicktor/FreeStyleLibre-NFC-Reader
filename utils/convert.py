@@ -10,6 +10,10 @@ def GetTime(minutes):
     t7 = t5-(t6*60)
     print("Sensor active for %d days %d hours and %d minutes" % (t4, t6, t7))
 
+def GetGlucose(bytes):
+    bitmask = 0x0FFF;
+    return "Glucose: "+str(((bytes & bitmask) / 6) - 37)
+
 if len(sys.argv) == 1:
     print "Use: convert.py /paht/to/log/log_name.log"
     exit()
@@ -49,13 +53,17 @@ lineNumber = 0
 for i in xrange(56,16*6*2+56,12):
     record = allcontent[i:i+12]
     bytes = [record[i:i+2] for i in range(0, len(record), 2)]
+
+
+    glucose = int("0x"+bytes[1]+bytes[0], 16)
+
     line = " ".join(bytes)
 
     if (nextWriteBlock1 - lineNumber != 0):
-        line = line + "    | " + str(nextWriteBlock1 - lineNumber) + " min"
+        line = line + "    | " + str(nextWriteBlock1 - lineNumber) + " min | " + GetGlucose(glucose)
 
     if (lineNumber == nextWriteBlock1):
-        line = line + "    | Now"
+        line = line + "    | Now | " + GetGlucose(glucose)
         nextWriteBlock1 += 16
 
     print line
@@ -70,13 +78,14 @@ lineNumber = 0
 for i in xrange(16*6*2+56,48*6*2+56,12):
     record = allcontent[i:i+12]
     bytes = [record[i:i+2] for i in range(0, len(record), 2)]
+    glucose = int("0x"+bytes[1]+bytes[0], 16)
     line = " ".join(bytes)
 
     if (nextWriteBlock2 - lineNumber != 0):
-        line = line + "    | " + str((nextWriteBlock2 - lineNumber)*15) + " min"
+        line = line + "    | " + str((nextWriteBlock2 - lineNumber)*15) + " min | " + GetGlucose(glucose)
 
     if (lineNumber == nextWriteBlock2):
-        line = line + "    | Last"
+        line = line + "    | Last | " + GetGlucose(glucose)
         nextWriteBlock2 += 32
 
     print line
