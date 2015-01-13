@@ -1,0 +1,2 @@
+/Users/Victor/Downloads/FreeStyleLibreNew/app/build/intermediates/classes/debug
+/Users/Victor/Downloads/FreeStyleLibreNew/app/build/intermediates/pre-dexed/debug/support-v4-19.1.0-2d8834c1e9c705a5f4d2b7f63e161263d004f711.jar

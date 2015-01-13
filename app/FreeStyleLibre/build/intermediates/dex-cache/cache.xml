@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/Users/Victor/Library/Android/sdk/extras/android/m2repository/com/android/support/support-v4/19.1.0/support-v4-19.1.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="85f201b380937e61a9dce6ca90ccf6872abbfb67">
+        <dex dex="/Users/Victor/Downloads/FreeStyleLibreNew/app/build/intermediates/pre-dexed/debug/support-v4-19.1.0-2d8834c1e9c705a5f4d2b7f63e161263d004f711.jar" />
+    </item>
+
+</items>
